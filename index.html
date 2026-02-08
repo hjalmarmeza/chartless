@@ -518,45 +518,49 @@
         const garden = document.getElementById('garden-container');
 
         // CACHÉ DE VIDEO DE CLOUDINARY (Protección Extrema de Cuotas)
-        // f_auto,q_auto: Formato y calidad automática
-        // w_1080,c_limit: Limita el ancho para ahorrar banda en móviles
-        // vc_auto: Selecciona el códec más eficiente según el navegador (VP9, AV1, etc)
         const VIDEO_URL = "https://res.cloudinary.com/dveqs8f3n/video/upload/f_auto,q_auto,w_1080,c_limit,vc_auto/v1770516312/VaporDiagonalGrey_builfa.mp4";
         let localVideoURL = null;
+        let videoLoadPromise = null; // Garantiza una sola descarga
 
-        async function prefetchVideo() {
-            try {
-                const cache = await caches.open('cloudinary-video-cache');
-                let response = await cache.match(VIDEO_URL);
+        function prefetchVideo() {
+            if (videoLoadPromise) return videoLoadPromise;
 
-                if (!response) {
-                    console.log("Descargando video para caché...");
-                    response = await fetch(VIDEO_URL);
-                    if (!response.ok) throw new Error("Fetch failed");
-                    await cache.put(VIDEO_URL, response.clone());
-                }
+            videoLoadPromise = (async () => {
+                try {
+                    const cache = await caches.open('cloudinary-video-cache');
+                    let response = await cache.match(VIDEO_URL);
 
-                const blob = await response.blob();
-                localVideoURL = URL.createObjectURL(blob);
-                const videoEl = document.getElementById('gratitude-video');
-
-                if (videoEl) {
-                    const isVisible = document.getElementById('gratitude-prompt').style.opacity == "1";
-                    const wasPlaying = !videoEl.paused;
-                    videoEl.src = localVideoURL;
-                    if (wasPlaying || isVisible) {
-                        videoEl.play().catch(e => console.log("Auto-resume blocked"));
+                    if (response) {
+                        console.log("✅ CHART LESS: Usando video local persistente (0 cuota Cloudinary).");
+                    } else {
+                        console.log("☁️ CHART LESS: Descargando video por única vez para caché...");
+                        const networkResponse = await fetch(VIDEO_URL);
+                        if (!networkResponse.ok) throw new Error("Fetch failed");
+                        await cache.put(VIDEO_URL, networkResponse.clone());
+                        response = networkResponse;
                     }
+
+                    const blob = await response.blob();
+                    localVideoURL = URL.createObjectURL(blob);
+
+                    const videoEl = document.getElementById('gratitude-video');
+                    if (videoEl) {
+                        const wasPlaying = !videoEl.paused;
+                        videoEl.src = localVideoURL;
+                        if (wasPlaying) videoEl.play().catch(() => { });
+                    }
+                    return localVideoURL;
+                } catch (e) {
+                    console.error("❌ Error en caché de video:", e);
+                    localVideoURL = VIDEO_URL;
+                    return VIDEO_URL;
                 }
-                console.log("Video listo en caché local.");
-            } catch (e) {
-                console.error("Error en caché de video:", e);
-                const videoEl = document.getElementById('gratitude-video');
-                if (videoEl && !videoEl.src) videoEl.src = VIDEO_URL;
-            }
+            })();
+            return videoLoadPromise;
         }
-        // Iniciar pre-descarga silenciosa tras 5 segundos de juego para no afectar el inicio
-        setTimeout(prefetchVideo, 5000);
+
+        // Iniciar pre-descarga a los 3 segundos
+        setTimeout(prefetchVideo, 3000);
 
         const bgctx = document.getElementById('bg-canvas').getContext('2d');
         const mctx = document.getElementById('maze-canvas').getContext('2d');
