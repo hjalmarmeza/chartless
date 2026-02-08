@@ -2,7 +2,8 @@ const CACHE_NAME = 'chart-less-cache-v1';
 const urlsToCache = [
   'index.html',
   'logo1.png',
-  'manifest.json'
+  'manifest.json',
+  'lost_in_the_ocean.mp3'
 ];
 
 self.addEventListener('install', event => {

@@ -201,7 +201,7 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.92);
+            background: radial-gradient(circle at center, rgba(1, 1, 1, 0.8) 0%, rgba(0, 0, 0, 0.95) 100%);
             z-index: 300;
             display: flex;
             flex-direction: column;
@@ -210,6 +210,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 1.5s ease;
+            backdrop-filter: blur(8px);
         }
 
         .achievement-title {
@@ -242,7 +243,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 35;
+            z-index: 305;
+            /* Visible sobre el overlay de victoria pero bajo el texto */
             pointer-events: none;
             opacity: 0;
             transition: opacity 1.5s ease;
@@ -577,10 +579,8 @@
 
             const music = document.getElementById('bg-music');
             if (music && music.paused) {
-                music.play().then(() => {
-                    music.pause();
-                    music.currentTime = 0;
-                }).catch(() => { });
+                music.volume = 0;
+                music.play().catch(e => console.error("Priming error:", e));
             }
 
             clearInterval(pressTimer);
@@ -604,6 +604,13 @@
             clearInterval(pressTimer);
             progress = 0;
             if (progCircle) progCircle.style.strokeDashoffset = 628;
+
+            // Pausar si no se ha iniciado el juego
+            const music = document.getElementById('bg-music');
+            if (music && !isStarting) {
+                music.pause();
+                music.currentTime = 0;
+            }
         }
 
         interactionZone.addEventListener('mousedown', handleStart);
@@ -615,17 +622,35 @@
             try {
                 if (navigator.vibrate) navigator.vibrate(100);
                 if (!isNatureSoundOn) toggleNatureSound();
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
                 const music = document.getElementById('bg-music');
                 if (music) {
-                    music.volume = 0.6; // Subimos volumen
-                    music.play().catch(() => {
+                    // Fade in suave
+                    music.volume = 0;
+                    music.play().then(() => {
+                        let vol = 0;
+                        const fadeIn = setInterval(() => {
+                            vol += 0.05;
+                            if (vol >= 0.6) {
+                                music.volume = 0.6;
+                                clearInterval(fadeIn);
+                            } else {
+                                music.volume = vol;
+                            }
+                        }, 100);
+                    }).catch(() => {
                         console.log("Reintentando reproducción en primer toque...");
-                        const retry = () => { music.play(); window.removeEventListener('touchstart', retry); };
+                        const retry = () => {
+                            music.volume = 0.6;
+                            music.play();
+                            if (audioCtx) audioCtx.resume();
+                            window.removeEventListener('touchstart', retry);
+                        };
                         window.addEventListener('touchstart', retry);
                     });
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Error en startGame audio:", e); }
 
             splash.classList.add('fade-out');
             if (splashAnimId) cancelAnimationFrame(splashAnimId);
