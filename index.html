@@ -436,12 +436,101 @@
             cursor: pointer;
             font-size: 0.8rem;
         }
+
+        /* LOGIN OVERLAY SYSTEM */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1.5s ease-in-out;
+            text-align: center;
+        }
+
+        .login-box {
+            width: 80%;
+            max-width: 320px;
+        }
+
+        .login-title {
+            color: var(--cyan);
+            font-size: 1.2rem;
+            letter-spacing: 0.4rem;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            font-weight: 200;
+            opacity: 0.8;
+        }
+
+        .login-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            font-family: var(--font-main);
+            font-size: 1.2rem;
+            letter-spacing: 0.3rem;
+            margin-bottom: 30px;
+            outline: none;
+            transition: border-color 0.5s ease;
+        }
+
+        .login-input:focus {
+            border-bottom-color: var(--cyan);
+        }
+
+        .login-btn {
+            background: transparent;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 12px 40px;
+            text-transform: uppercase;
+            letter-spacing: 0.2rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.5s ease;
+        }
+
+        .login-btn:active {
+            transform: scale(0.95);
+            background: rgba(0, 242, 255, 0.1);
+        }
+
+        .login-error {
+            color: #ff4d4d;
+            font-size: 0.7rem;
+            margin-top: 20px;
+            letter-spacing: 0.1rem;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
     </style>
 </head>
 
 <body>
 
     <div id="app-container">
+        <!-- LOGIN OVERLAY -->
+        <div id="login-overlay">
+            <div class="login-box">
+                <div class="login-title">ESPACIO PRIVADO</div>
+                <input type="password" id="access-key" class="login-input" placeholder="CÓDIGO" autocomplete="off">
+                <button class="login-btn" onclick="checkAccess()">ENTRAR</button>
+                <div id="login-error" class="login-error">ACCESO DENEGADO</div>
+            </div>
+        </div>
+
         <canvas id="tree-canvas"></canvas>
         <audio id="bg-music" loop>
             <source src="lost_in_the_ocean.mp3" type="audio/mpeg">
@@ -524,6 +613,58 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch(() => { });
             });
+        }
+
+        // --- SISTEMA DE ACCESO PRIVADO ---
+        const ACCESS_API = "https://script.google.com/macros/s/AKfycbxQ4lMm7C3-9zoF-YtfhgelrUv9eNYlYjD2ah-yGLyel0oVaWBYfHp278yq9YRIqs2htA/exec";
+
+        async function checkAccess(auto = false) {
+            const keyInput = document.getElementById('access-key');
+            const errorEl = document.getElementById('login-error');
+            const overlay = document.getElementById('login-overlay');
+
+            let key = auto ? localStorage.getItem('chartless_key') : keyInput.value;
+
+            if (!key) return;
+
+            if (!auto) {
+                document.querySelector('.login-btn').innerText = "...";
+                document.querySelector('.login-btn').style.opacity = "0.5";
+            }
+
+            try {
+                const response = await fetch(`${ACCESS_API}?action=validate_access&key=${encodeURIComponent(key)}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    localStorage.setItem('chartless_key', key);
+                    overlay.style.opacity = '0';
+                    setTimeout(() => overlay.style.display = 'none', 1500);
+                } else {
+                    if (auto) {
+                        localStorage.removeItem('chartless_key');
+                    } else {
+                        errorEl.style.opacity = '1';
+                        document.querySelector('.login-btn').innerText = "ENTRAR";
+                        document.querySelector('.login-btn').style.opacity = "1";
+                        setTimeout(() => errorEl.style.opacity = '0', 3000);
+                    }
+                }
+            } catch (e) {
+                console.error("Error validación:", e);
+                // Si hay error de red y ya estaba validado antes, permitimos entrar offline
+                if (auto && localStorage.getItem('chartless_key')) {
+                    overlay.style.display = 'none';
+                } else {
+                    errorEl.innerText = "ERROR DE CONEXIÓN";
+                    errorEl.style.opacity = '1';
+                }
+            }
+        }
+
+        // Verificar acceso al cargar
+        if (localStorage.getItem('chartless_key')) {
+            checkAccess(true);
         }
 
         const config = {
