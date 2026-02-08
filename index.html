@@ -478,21 +478,24 @@
             <canvas id="splash-fx-canvas"
                 style="position: absolute; top: 0; left: 0; z-index: 205; pointer-events: none;"></canvas>
             <img id="logo-start" src="logo1.png" alt="" onerror="this.classList.add('hidden')">
-            <div class="splash-content" id="interaction-zone">
-                <div class="fingerprint-container">
-                    <svg class="progress-ring">
-                        <circle class="progress-ring__circle" id="progress-circle" r="100" cx="110" cy="110" />
-                    </svg>
-                    <div
-                        style="width: 50px; height: 50px; border: 2px solid var(--cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <div class="splash-content">
+                <div id="interaction-zone" style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="fingerprint-container">
+                        <svg class="progress-ring">
+                            <circle class="progress-ring__circle" id="progress-circle" r="100" cx="110" cy="110" />
+                        </svg>
                         <div
-                            style="width: 10px; height: 10px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 20px var(--cyan);">
+                            style="width: 50px; height: 50px; border: 2px solid var(--cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <div
+                                style="width: 10px; height: 10px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 20px var(--cyan);">
+                            </div>
                         </div>
                     </div>
+                    <div class="instruction-text">MANTÉN PARA EMPEZAR</div>
                 </div>
-                <div class="instruction-text">MANTÉN PARA EMPEZAR</div>
+                <!-- Botón fuera de interaction-zone para evitar preventDefault -->
                 <div id="purpose-trigger" onclick="togglePurpose(true)"
-                    style="margin-top: 30px; color: var(--cyan); opacity: 0.6; font-size: 0.7rem; letter-spacing: 0.2rem; text-decoration: underline; cursor: pointer;">
+                    style="margin-top: 30px; color: var(--cyan); opacity: 0.7; font-size: 0.75rem; letter-spacing: 0.2rem; text-decoration: underline; cursor: pointer; position: relative; z-index: 210; padding: 10px;">
                     ¿CÓMO ME AYUDA?
                 </div>
             </div>
@@ -702,9 +705,10 @@
             progress = 0;
             if (progCircle) progCircle.style.strokeDashoffset = 628;
 
-            // Pausar si no se ha iniciado el juego
+            // Solo pausar si NO se ha abierto el modal y no ha empezado el juego
             const music = document.getElementById('bg-music');
-            if (music && !isStarting) {
+            const isModalOpen = document.getElementById('purpose-modal').style.display === 'flex';
+            if (music && !isStarting && !isModalOpen) {
                 music.pause();
                 music.currentTime = 0;
             }
@@ -718,6 +722,20 @@
         function togglePurpose(show) {
             const modal = document.getElementById('purpose-modal');
             modal.style.display = show ? 'flex' : 'none';
+            if (show) {
+                // Priming de audio y video al interactuar con la guía
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const music = document.getElementById('bg-music');
+                if (music && music.paused) {
+                    music.volume = 0;
+                    music.play().catch(() => { });
+                }
+                const video = document.getElementById('gratitude-video');
+                if (video && video.paused) {
+                    video.play().then(() => video.pause()).catch(() => { });
+                }
+            }
         }
 
         function startGame() {
