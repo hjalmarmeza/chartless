@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <title>CHART LESS - Laberinto Silencioso</title>
+    <style>
+        :root {
+            --bg-color: #010101;
+            --cyan: #00f2ff;
+            --gold: #ffcc00;
+            --message-color: #e2c0ff;
+            --font-main: 'Outfit', 'Inter', sans-serif;
+            --lavender: #e2c0ff;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;400&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: var(--font-main);
+            color: white;
+        }
+
+        #app-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        /* SPLASH SCREEN CON RESPIRACIÓN */
+        #splash-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 200;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 2s ease-in-out;
+        }
+
+        #logo-start {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.5;
+            animation: breathLogo 8s ease-in-out infinite;
+        }
+
+        @keyframes breathLogo {
+
+            0%,
+            100% {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+
+            50% {
+                transform: scale(1.08);
+                filter: brightness(1.4);
+            }
+        }
+
+        .splash-content {
+            position: relative;
+            z-index: 201;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            letter-spacing: 2.2rem;
+            font-weight: 100;
+            text-transform: uppercase;
+            margin-left: 2.2rem;
+            color: #fff;
+            margin-bottom: 60px;
+            text-shadow: 0 0 40px rgba(0, 242, 255, 0.3);
+        }
+
+        .fingerprint-container {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .progress-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 220px;
+            height: 220px;
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring__circle {
+            stroke: var(--cyan);
+            stroke-width: 4;
+            fill: transparent;
+            stroke-dasharray: 628;
+            stroke-dashoffset: 628;
+            transition: stroke-dashoffset 0.1s linear;
+        }
+
+        .instruction-text {
+            margin-top: 50px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.8rem;
+            letter-spacing: 0.5rem;
+            text-transform: uppercase;
+            font-weight: 200;
+        }
+
+        /* CAPAS DE LIENZO */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            touch-action: none;
+        }
+
+        #bg-canvas {
+            z-index: 1;
+            opacity: 0.4;
+        }
+
+        #maze-canvas {
+            z-index: 5;
+            opacity: 0.2;
+            /* 20% solicitado, ahora visible con color corregido */
+        }
+
+        #trail-canvas {
+            z-index: 10;
+            mix-blend-mode: screen;
+            opacity: 0.7;
+        }
+
+        #player-canvas {
+            z-index: 30;
+        }
+
+        #central-patience-message {
+            position: absolute;
+            width: 85%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 150;
+            color: var(--message-color);
+            font-size: 1.5rem;
+            /* Reducido para móviles */
+            font-weight: 100;
+            letter-spacing: 0.3rem;
+            text-transform: uppercase;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 3s ease-in-out, transform 0.1s linear;
+            text-shadow: 0 0 15px rgba(226, 192, 255, 0.3);
+            /* Menos invasivo */
+            line-height: 1.6;
+        }
+
+        #achievement-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+
+        .achievement-title {
+            color: var(--gold);
+            font-size: 2.5rem;
+            letter-spacing: 1.5rem;
+            font-weight: 200;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        /* JARDÍN DE SERENIDAD */
+        #garden-container {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 40;
+            display: flex;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        #tree-canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 35;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        .garden-seed {
+            width: 6px;
+            height: 6px;
+            background: var(--cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--cyan);
+            opacity: 0;
+            animation: scaleIn 0.5s forwards ease-out;
+        }
+
+        @keyframes scaleIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+        }
+
+        .show-msg-central {
+            opacity: 0.5 !important;
+            /* Más sutil, menos invasivo */
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .fade-out {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+
+        .dissolving {
+            filter: blur(50px) brightness(1.5);
+            opacity: 0;
+            transition: all 1.8s ease-in-out;
+        }
+
+        /* OPCIÓN 3: DIARIO GRATITUD */
+        #gratitude-prompt {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            /* Totalmente negro para ocultar el juego */
+            z-index: 400;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease;
+        }
+
+        #gratitude-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        .gratitude-text {
+            color: var(--message-color);
+            font-size: 1.6rem;
+            font-weight: 200;
+            text-transform: uppercase;
+            letter-spacing: 0.3rem;
+            margin-bottom: 40px;
+            text-align: center;
+            line-height: 1.6;
+            padding: 0 20px;
+        }
+
+        .gratitude-btn {
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 18px 45px;
+            font-family: var(--font-main);
+            text-transform: uppercase;
+            letter-spacing: 0.2rem;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 4px;
+        }
+
+        .gratitude-btn:hover {
+            background: rgba(255, 204, 0, 0.1);
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.2);
+        }
+
+        /* OPCIÓN 4: SONIDOS */
+        #sound-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 500;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.7rem;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+
+        /* CRÉDITOS DE MÚSICA */
+        #music-credits {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.15);
+            text-align: center;
+            z-index: 202;
+            pointer-events: none;
+            line-height: 1.4;
+            letter-spacing: 0.1rem;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app-container">
+        <canvas id="tree-canvas"></canvas>
+        <audio id="bg-music" loop>
+            <source src="audio/lost_in_the_ocean.mp3" type="audio/mpeg">
+        </audio>
+
+        <div id="gratitude-prompt">
+            <video id="gratitude-video" loop muted playsinline preload="none">
+                <!-- El src se asignará dinámicamente desde el caché -->
+            </video>
+            <div class="gratitude-text">Ahora cierra tus ojos unos segundos y piensa<br><span
+                    style="font-size: 1.2rem; opacity: 0.8;">¿Por qué estás agradecido hoy con Dios?</span></div>
+            <button class="gratitude-btn" onclick="closeGratitude()">Agradecimiento elevado al cielo</button>
+        </div>
+        <div id="splash-screen">
+            <div id="music-credits">
+                Music: lost in the ocean by Limujii<br>
+                License: CC BY 3.0
+            </div>
+            <canvas id="splash-fx-canvas"
+                style="position: absolute; top: 0; left: 0; z-index: 205; pointer-events: none;"></canvas>
+            <img id="logo-start" src="logo1.png" alt="" onerror="this.classList.add('hidden')">
+            <div class="splash-content" id="interaction-zone">
+                <div class="fingerprint-container">
+                    <svg class="progress-ring">
+                        <circle class="progress-ring__circle" id="progress-circle" r="100" cx="110" cy="110" />
+                    </svg>
+                    <div
+                        style="width: 50px; height: 50px; border: 2px solid var(--cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <div
+                            style="width: 10px; height: 10px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 20px var(--cyan);">
+                        </div>
+                    </div>
+                </div>
+                <div class="instruction-text">MANTÉN PARA EMPEZAR</div>
+            </div>
+        </div>
+
+        <div id="central-patience-message">Respira</div>
+
+        <!-- OPCIÓN 3: JARDÍN DE SERENIDAD -->
+        <div id="garden-container"></div>
+
+        <div id="achievement-overlay">
+            <div class="achievement-title">OBJETIVO LOGRADO</div>
+            <div id="win-phrase"
+                style="color: white; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.4rem; text-align: center; padding: 20px;">
+            </div>
+        </div>
+
+        <canvas id="bg-canvas"></canvas>
+        <canvas id="maze-canvas"></canvas>
+        <canvas id="trail-canvas"></canvas>
+        <canvas id="player-canvas"></canvas>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => { });
+            });
+        }
+
+        const config = {
+            baseCellSize: 75,
+            fluidFriction: 0.96,
+            fluidElasticity: 0.01,
+            cyan: '#00f2ff',
+            gold: '#ffcc00',
+            lavender: '#e2c0ff',
+            wallColor: '#444444' // Gris más claro para que el 20% sea visible
+        };
+
+        const patiencePhrases = [
+            "No se inquieten por nada", "Mi paz os dejo, mi paz os doy", "Venid a mí los que estáis cansados",
+            "El Señor es mi pastor", "Nada te faltará", "Quédate quieto ante el Señor", "Dios es nuestro amparo",
+            "Echa sobre Él toda tu ansiedad", "No temas, yo estoy contigo", "Él libró todos mis temores",
+            "Descansa en verdes pastos", "Él restaura tu alma", "Tú guardarás en completa paz", "Su gracia te basta",
+            "Pensamientos de paz para ti", "En paz me acostaré", "El Señor es tu luz", "Confía con todo tu corazón",
+            "Su amor echa fuera el temor", "El Señor fortalece tu corazón", "Estad quietos y conoced",
+            "La paz de Dios sobrepasa todo", "No desmayes, Él te esfuerza", "Tu socorro viene del Señor",
+            "En el descanso está tu fuerza", "Cerca está el Señor de ti", "Él sana a los quebrantados",
+            "Regocíjate en Su esperanza", "Sé valiente y espera", "Su fidelidad es tu escudo",
+            "Bajo Sus alas estás seguro", "El Señor es tu refugio", "Su bondad es para siempre", "Su palabra es lámpara",
+            "Él calma la tormenta", "Camina por fe, no por vista", "Su gozo es tu fortaleza",
+            "El objetivo es el recorrido", "Siente la quietud", "Todo fluye a su tiempo", "Sin prisa",
+            "Libera la tensión", "Disfruta el silencio", "Paciencia infinita", "Mente en paz",
+            "La paz es el camino", "Confía en el proceso", "Serenidad absoluta", "Paz permanente"
+        ];
+
+        let width, height, cols, rows, maze = [];
+        let player = { x: 0, y: 0, targetX: 0, targetY: 0, vx: 0, vy: 0, radius: 15 };
+        let drops = [];
+        let discoveryNodes = [];
+        let particles = [];
+        let endCell = { i: 0, j: 0 };
+        let isGameActive = false;
+        let currentCellSize = config.baseCellSize;
+        let bgTime = 0;
+
+        // NUEVAS VARIABLES DE ESTADO
+        let completedMazes = 0; // OPCIÓN 3 Y 4
+        let breathTime = 0; // OPCIÓN 1
+        let stationaryTime = 0; // OPCIÓN 2
+        let contemplationParticles = []; // OPCIÓN 2
+        let isNatureSoundOn = false; // OPCIÓN 4
+        let audioCtx, rainNode;
+
+        // NUEVAS VARIABLES SPLASH FX
+        let splashParticles = [];
+        let splashRipples = [];
+        let splashCtx;
+        let splashTime = 0;
+
+        // ESTADO OPCIONES 1-5
+        let firefly = { x: 0, y: 0, targetX: 0, targetY: 0, active: false }; // Opción 3
+        let treeGrowth = 0; // Opción 1
+        let treeCanvas, treeCtx;
+        let lastNodeX, lastNodeY; // Para destellos corners (Opción 5)
+        const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25]; // Escala mayor C (Opción 2)
+        let lastAudioX = 0, lastAudioY = 0;
+
+        const splash = document.getElementById('splash-screen');
+        const interactionZone = document.getElementById('interaction-zone');
+        const progCircle = document.getElementById('progress-circle');
+        const cMsg = document.getElementById('central-patience-message');
+        const achievement = document.getElementById('achievement-overlay');
+        const garden = document.getElementById('garden-container');
+
+        // CACHÉ DE VIDEO DE CLOUDINARY (Protección de Cuotas)
+        const VIDEO_URL = "https://res.cloudinary.com/dveqs8f3n/video/upload/f_auto,q_auto/v1770516312/VaporDiagonalGrey_builfa.mp4";
+        let localVideoURL = null;
+
+        async function prefetchVideo() {
+            try {
+                // Intentar recuperar de Cache API (máxima eficiencia)
+                const cache = await caches.open('cloudinary-video-cache');
+                let response = await cache.match(VIDEO_URL);
+
+                if (!response) {
+                    console.log("Descargando video por única vez...");
+                    response = await fetch(VIDEO_URL);
+                    await cache.put(VIDEO_URL, response.clone());
+                } else {
+                    console.log("Video cargado desde caché local.");
+                }
+
+                const blob = await response.blob();
+                localVideoURL = URL.createObjectURL(blob);
+                const videoEl = document.getElementById('gratitude-video');
+                if (videoEl) videoEl.src = localVideoURL;
+            } catch (e) { console.error("Error en caché de video:", e); }
+        }
+        // Iniciar pre-descarga silenciosa tras 5 segundos de juego para no afectar el inicio
+        setTimeout(prefetchVideo, 5000);
+
+        const bgctx = document.getElementById('bg-canvas').getContext('2d');
+        const mctx = document.getElementById('maze-canvas').getContext('2d');
+        const tctx = document.getElementById('trail-canvas').getContext('2d');
+        const pctx = document.getElementById('player-canvas').getContext('2d');
+        treeCanvas = document.getElementById('tree-canvas');
+        treeCtx = treeCanvas.getContext('2d');
+
+        function showCentralMessage(text) {
+            if (!isGameActive && !text) return;
+            cMsg.innerText = text || patiencePhrases[Math.floor(Math.random() * patiencePhrases.length)];
+            cMsg.classList.add('show-msg-central');
+            setTimeout(() => { cMsg.classList.remove('show-msg-central'); }, 6000);
+        }
+
+        // --- OPCIÓN 4: TRANSICIÓN ESTACIONAL ---
+        function updateSeasonalColor() {
+            const tones = ['#00f2ff', '#00ffaa', '#e2c0ff', '#ff99cc', '#ffcc00'];
+            config.cyan = tones[completedMazes % tones.length];
+            document.documentElement.style.setProperty('--cyan', config.cyan);
+        }
+
+        // --- ESTADO GLOBAL Y CONFIGURACIÓN ---
+        let pressTimer, progress = 0;
+        let isStarting = false;
+        let splashAnimId;
+
+        function handleStart(e) {
+            if (isStarting) return;
+            if (e.cancelable) e.preventDefault();
+
+            // Inicialización de Audio para móviles
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const music = document.getElementById('bg-music');
+            if (music && music.paused) {
+                music.play().then(() => {
+                    music.pause();
+                    music.currentTime = 0;
+                }).catch(() => { });
+            }
+
+            clearInterval(pressTimer);
+            pressTimer = setInterval(() => {
+                progress += 20; // Un poco más rápido para mejor respuesta
+                let offset = 628 - (progress / 1500) * 628;
+                if (progCircle) progCircle.style.strokeDashoffset = Math.max(0, offset);
+
+                if (progress >= 1500) {
+                    clearInterval(pressTimer);
+                    if (!isStarting) {
+                        isStarting = true;
+                        startGame();
+                    }
+                }
+            }, 20);
+        }
+
+        function handleEnd() {
+            if (isStarting) return;
+            clearInterval(pressTimer);
+            progress = 0;
+            if (progCircle) progCircle.style.strokeDashoffset = 628;
+        }
+
+        interactionZone.addEventListener('mousedown', handleStart);
+        interactionZone.addEventListener('touchstart', handleStart, { passive: false });
+        window.addEventListener('mouseup', handleEnd);
+        window.addEventListener('touchend', handleEnd);
+
+        function startGame() {
+            try {
+                if (navigator.vibrate) navigator.vibrate(100);
+                if (!isNatureSoundOn) toggleNatureSound();
+
+                const music = document.getElementById('bg-music');
+                if (music) {
+                    music.volume = 0.6; // Subimos volumen
+                    music.play().catch(() => {
+                        console.log("Reintentando reproducción en primer toque...");
+                        const retry = () => { music.play(); window.removeEventListener('touchstart', retry); };
+                        window.addEventListener('touchstart', retry);
+                    });
+                }
+            } catch (e) { console.error(e); }
+
+            splash.classList.add('fade-out');
+            if (splashAnimId) cancelAnimationFrame(splashAnimId);
+
+            setTimeout(() => {
+                splash.style.display = 'none'; // Forzar ocultamiento
+                initGame();
+                setInterval(() => showCentralMessage(), 50000);
+            }, 2000);
+        }
+
+        // LÓGICA DE FX PANTALLA DE INICIO (OPCIÓN 1 Y 2)
+        function initSplashFX() {
+            const sCanvas = document.getElementById('splash-fx-canvas');
+            sCanvas.width = window.innerWidth; sCanvas.height = window.innerHeight;
+            splashCtx = sCanvas.getContext('2d');
+
+            for (let i = 0; i < 150; i++) {
+                splashParticles.push({
+                    x: Math.random() * sCanvas.width,
+                    y: Math.random() * sCanvas.height,
+                    r: Math.random() * 1.5,
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: (Math.random() - 0.5) * 0.2,
+                    origX: 0, origY: 0
+                });
+            }
+            animateSplashFX();
+        }
+
+        function animateSplashFX() {
+            if (splash.classList.contains('hidden')) return;
+            splashCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            splashTime += 0.015;
+
+            // Respiración para partículas (Opción 1)
+            let breathFactor = Math.sin(splashTime * 0.4) * 30; // Sincronizado con 8s aprox
+
+            splashParticles.forEach(p => {
+                let dx = p.x - window.innerWidth / 2;
+                let dy = p.y - window.innerHeight / 2;
+                let dist = Math.hypot(dx, dy);
+                let offsetX = (dx / dist) * breathFactor;
+                let offsetY = (dy / dist) * breathFactor;
+
+                splashCtx.fillStyle = `rgba(255, 255, 255, ${0.4 + Math.random() * 0.4})`; // Brillo aumentado
+                splashCtx.shadowBlur = 4;
+                splashCtx.shadowColor = "white";
+                splashCtx.beginPath();
+                splashCtx.arc(p.x + offsetX, p.y + offsetY, p.r, 0, Math.PI * 2);
+                splashCtx.fill();
+                splashCtx.shadowBlur = 0;
+
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = window.innerWidth;
+                if (p.x > window.innerWidth) p.x = 0;
+                if (p.y < 0) p.y = window.innerHeight;
+                if (p.y > window.innerHeight) p.y = 0;
+            });
+
+            // Ondas al pulsar (Opción 2)
+            if (progress > 0 && Math.random() < 0.15) {
+                splashRipples.push({ x: window.innerWidth / 2, y: window.innerHeight / 2, r: 50, op: 0.4 });
+            }
+
+            splashRipples.forEach((r, it) => {
+                splashCtx.strokeStyle = `rgba(0, 242, 255, ${r.op})`;
+                splashCtx.lineWidth = 1;
+                splashCtx.beginPath();
+                splashCtx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+                splashCtx.stroke();
+                r.r += 3; r.op -= 0.005;
+                if (r.op <= 0) splashRipples.splice(it, 1);
+            });
+
+            splashAnimId = requestAnimationFrame(animateSplashFX);
+        }
+        window.addEventListener('load', initSplashFX);
+
+        // OPCIÓN 4: SONIDO DE OLAS DEL MAR SINTÉTICO
+        function toggleNatureSound() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const bufferSize = 4 * audioCtx.sampleRate,
+                    noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate),
+                    output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; }
+
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = noiseBuffer; noise.loop = true;
+
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass'; filter.frequency.value = 500;
+
+                rainNode = audioCtx.createGain();
+                rainNode.gain.value = 0;
+
+                // Oscilador para el vaivén de las olas
+                const lfo = audioCtx.createOscillator();
+                lfo.type = 'sine';
+                lfo.frequency.value = 0.15; // Un ciclo cada ~6 segundos
+                const lfoGain = audioCtx.createGain();
+                lfoGain.gain.value = 0.1; // Intensidad del vaivén
+
+                lfo.connect(lfoGain);
+                lfoGain.connect(rainNode.gain);
+                lfo.start();
+
+                noise.connect(filter);
+                filter.connect(rainNode);
+                rainNode.connect(audioCtx.destination);
+                noise.start();
+            }
+
+            isNatureSoundOn = !isNatureSoundOn;
+            if (rainNode) {
+                rainNode.gain.setTargetAtTime(isNatureSoundOn ? 0.08 : 0, audioCtx.currentTime, 2);
+            }
+        }
+
+        // OPCION 2: ELIMINADA (MELODÍAS GENERATIVAS)
+
+        // OPCIÓN 1: EL ÁRBOL DE LA VIDA
+        function drawTree(x, y, len, angle, branchWidth) {
+            treeCtx.beginPath();
+            treeCtx.save();
+            treeCtx.strokeStyle = config.cyan; treeCtx.lineWidth = branchWidth;
+            treeCtx.translate(x, y); treeCtx.rotate(angle * Math.PI / 180);
+            treeCtx.moveTo(0, 0); treeCtx.lineTo(0, -len);
+            treeCtx.stroke();
+            if (len < 10) {
+                treeCtx.fillStyle = config.gold; treeCtx.beginPath();
+                treeCtx.arc(0, -len, 2, 0, Math.PI * 2); treeCtx.fill();
+                treeCtx.restore(); return;
+            }
+            drawTree(0, -len, len * 0.75, angle - 15, branchWidth * 0.8);
+            drawTree(0, -len, len * 0.75, angle + 15, branchWidth * 0.8);
+            treeCtx.restore();
+        }
+
+        function updateTree(show = true) {
+            if (!show) {
+                treeCanvas.style.opacity = 0;
+                setTimeout(() => { if (treeCtx) treeCtx.clearRect(0, 0, treeCanvas.width, treeCanvas.height); }, 1500);
+                return;
+            }
+            treeCanvas.width = 400; treeCanvas.height = 400;
+            treeCtx.clearRect(0, 0, 400, 400);
+            if (completedMazes > 0) {
+                drawTree(200, 350, Math.min(120, 50 + completedMazes * 5), 0, 5);
+                treeCanvas.style.opacity = 1;
+            }
+        }
+
+        // OPCIÓN 3: GUÍA LUCIÉRNAGA (BFS)
+        function getGuidePath() {
+            let startI = Math.floor(player.x / currentCellSize);
+            let startJ = Math.floor(player.y / currentCellSize);
+            let queue = [{ i: startI, j: startJ, path: [] }];
+            let visited = new Set([`${startI},${startJ}`]);
+            while (queue.length > 0) {
+                let { i, j, path } = queue.shift();
+                if (i === endCell.i && j === endCell.j) return path;
+                [[i, j - 1, 0], [i + 1, j, 1], [i, j + 1, 2], [i - 1, j, 3]].forEach(([ni, nj, wall]) => {
+                    if (ni >= 0 && nj >= 0 && ni < cols && nj < rows) {
+                        let cell = maze[i + j * cols];
+                        if (!cell.walls[wall] && !visited.has(`${ni},${nj}`)) {
+                            visited.add(`${ni},${nj}`);
+                            queue.push({ i: ni, j: nj, path: [...path, { x: ni * currentCellSize + currentCellSize / 2, y: nj * currentCellSize + currentCellSize / 2 }] });
+                        }
+                    }
+                });
+            }
+            return [];
+        }
+
+        function drawBackground() {
+            // OPCIÓN 4: RESPIRACIÓN GUIADA VISUAL
+            let breath = (Math.sin(Date.now() * 0.0008) + 1) / 2; // Ciclo de 8s
+            bgctx.fillStyle = `rgb(0, ${Math.floor(breath * 15)}, ${Math.floor(breath * 25)})`;
+            bgctx.fillRect(0, 0, width, height);
+            bgTime += 0.005;
+            for (let i = 0; i < 3; i++) {
+                let x = Math.sin(bgTime + i) * width * 0.2 + width / 2;
+                let y = Math.cos(bgTime * 0.7 + i) * height * 0.2 + height / 2;
+                let grad = bgctx.createRadialGradient(x, y, 0, x, y, width * 0.7);
+                grad.addColorStop(0, `rgba(0, 50, 80, ${0.1 * (i + 1)})`);
+                grad.addColorStop(1, 'transparent');
+                bgctx.fillStyle = grad;
+                bgctx.fillRect(0, 0, width, height);
+            }
+        }
+
+        class Cell {
+            constructor(i, j) {
+                this.i = i; this.j = j;
+                this.walls = [true, true, true, true];
+                this.visited = false;
+            }
+            show() {
+                let x = this.i * currentCellSize, y = this.j * currentCellSize;
+                mctx.strokeStyle = config.wallColor;
+                mctx.lineWidth = 4;
+                mctx.beginPath();
+                if (this.walls[0]) { mctx.moveTo(x, y); mctx.lineTo(x + currentCellSize, y); }
+                if (this.walls[1]) { mctx.moveTo(x + currentCellSize, y); mctx.lineTo(x + currentCellSize, y + currentCellSize); }
+                if (this.walls[2]) { mctx.moveTo(x + currentCellSize, y + currentCellSize); mctx.lineTo(x, y + currentCellSize); }
+                if (this.walls[3]) { mctx.moveTo(x, y + currentCellSize); mctx.lineTo(x, y); }
+                mctx.stroke();
+            }
+        }
+
+        function initGame() {
+            window.addEventListener('resize', resize);
+            resize();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resize() {
+            width = window.innerWidth; height = window.innerHeight;
+            [bgctx.canvas, mctx.canvas, tctx.canvas, pctx.canvas].forEach(c => { c.width = width; c.height = height; });
+            currentCellSize = config.baseCellSize;
+            cols = Math.floor(width / currentCellSize);
+            rows = Math.floor(height / currentCellSize);
+            const ox = (width - cols * currentCellSize) / 2;
+            const oy = (height - rows * currentCellSize) / 2;
+            [mctx, tctx, pctx].forEach(ctx => {
+                ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(ox, oy);
+            });
+            buildMaze();
+            resetPlayer();
+            // Eliminado updateTree() de aquí para que no bloquee el juego
+        }
+
+        function buildMaze() {
+            maze = Array.from({ length: cols * rows }, (_, k) => new Cell(k % cols, Math.floor(k / cols)));
+            let startI = 0, startJ = 0;
+            let current = maze[0];
+            let stack = [];
+            current.visited = true;
+
+            while (true) {
+                let neighbors = [];
+                let { i, j } = current;
+                [[i, j - 1, 0, 2], [i + 1, j, 1, 3], [i, j + 1, 2, 0], [i - 1, j, 3, 1]].forEach(([ni, nj, w, ow]) => {
+                    let neighbor = (ni >= 0 && nj >= 0 && ni < cols && nj < rows) ? maze[ni + nj * cols] : null;
+                    if (neighbor && !neighbor.visited) neighbors.push({ node: neighbor, wall: w, oWall: ow });
+                });
+                if (neighbors.length > 0) {
+                    let next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    next.node.visited = true; stack.push(current);
+                    current.walls[next.wall] = false; next.node.walls[next.oWall] = false;
+                    current = next.node;
+                } else if (stack.length > 0) { current = stack.pop(); } else break;
+            }
+
+            endCell = { i: cols - 1, j: rows - 1 };
+            discoveryNodes = [];
+            maze.forEach(c => {
+                if (Math.random() < 0.1) discoveryNodes.push({ x: c.i * currentCellSize + currentCellSize / 2, y: c.j * currentCellSize + currentCellSize / 2, activated: false });
+            });
+
+            player.x = player.targetX = currentCellSize / 2;
+            player.y = player.targetY = currentCellSize / 2;
+            mctx.clearRect(-width, -height, width * 2, height * 2);
+            maze.forEach(c => c.show());
+        }
+
+        function resetPlayer() {
+            player.vx = player.vy = 0;
+            tctx.clearRect(-width, -height, width * 2, height * 2);
+            isGameActive = true;
+        }
+
+        let isMouseDown = false;
+        const updateTarget = (e) => {
+            if (!isGameActive) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const ox = (width - cols * currentCellSize) / 2;
+            const oy = (height - rows * currentCellSize) / 2;
+            player.targetX = clientX - ox; player.targetY = clientY - oy;
+        };
+
+        window.addEventListener('mousedown', (e) => { isMouseDown = true; updateTarget(e); });
+        window.addEventListener('mousemove', (e) => { if (isMouseDown) updateTarget(e); });
+        window.addEventListener('mouseup', () => isMouseDown = false);
+        window.addEventListener('touchstart', updateTarget, { passive: false });
+        window.addEventListener('touchmove', updateTarget, { passive: false });
+
+        function checkWall(nx, ny) {
+            let i = Math.floor(nx / currentCellSize), j = Math.floor(ny / currentCellSize);
+            let cell = maze[i + j * cols];
+            if (!cell) return true;
+            let cx = nx % currentCellSize, cy = ny % currentCellSize, b = player.radius - 2;
+            if (cell.walls[0] && cy < b) return true;
+            if (cell.walls[1] && cx > currentCellSize - b) return true;
+            if (cell.walls[2] && cy > currentCellSize - b) return true;
+            if (cell.walls[3] && cx < b) return true;
+            return false;
+        }
+
+        function gameLoop() {
+            drawBackground();
+            if (isGameActive) {
+                player.vx += (player.targetX - player.x) * config.fluidElasticity;
+                player.vy += (player.targetY - player.y) * config.fluidElasticity;
+                player.vx *= config.fluidFriction; player.vy *= config.fluidFriction;
+
+                let speed = Math.hypot(player.vx, player.vy);
+                if (navigator.vibrate) {
+                    if (speed > 5) navigator.vibrate(20);
+                    else if (speed > 0.2 && speed < 1) navigator.vibrate(5);
+                }
+
+                // OPCIÓN 5: DESTELLOS
+                if (speed > 0.5) {
+                    let curI = Math.floor(player.x / currentCellSize);
+                    let curJ = Math.floor(player.y / currentCellSize);
+                    if (curI !== lastNodeX || curJ !== lastNodeY) {
+                        for (let i = 0; i < 5; i++) {
+                            particles.push({
+                                x: player.x, y: player.y,
+                                vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4,
+                                r: Math.random() * 2 + 1, c: config.gold
+                            });
+                        }
+                        lastNodeX = curI; lastNodeY = curJ;
+                    }
+                }
+
+                // OPCIÓN 2: MODO CONTEMPLACIÓN
+                if (speed < 0.2) {
+                    stationaryTime++;
+                    if (stationaryTime > 300 && contemplationParticles.length < 50) {
+                        contemplationParticles.push({
+                            x: Math.random() * width, y: Math.random() * height,
+                            r: Math.random() * 2, speed: Math.random() * 0.5 + 0.2, opacity: 0
+                        });
+                    }
+                    // OPCIÓN 3: ACTIVAR LUCIÉRNAGA GUÍA
+                    if (stationaryTime > 600 && !firefly.active) {
+                        let path = getGuidePath();
+                        if (path.length > 0) {
+                            firefly.active = true;
+                            firefly.x = player.x; firefly.y = player.y;
+                            firefly.targetX = path[0].x; firefly.targetY = path[0].y;
+                        }
+                    }
+                } else {
+                    stationaryTime = 0;
+                    firefly.active = false;
+                    contemplationParticles.forEach(p => p.opacity *= 0.9);
+                }
+
+                if (!checkWall(player.x + player.vx, player.y + player.vy)) {
+                    player.x += player.vx; player.y += player.vy;
+                } else { player.vx *= -0.1; player.vy *= -0.1; }
+
+                if (speed > 2 && Math.random() < 0.2) drops.push({ x: player.x, y: player.y, vx: -player.vx * 0.4, vy: -player.vy * 0.4, r: 5, life: 1 });
+
+                // OPCIÓN 1: AURA DE PROXIMIDAD
+                let nearbyI = Math.floor(player.x / currentCellSize);
+                let nearbyJ = Math.floor(player.y / currentCellSize);
+                for (let i = nearbyI - 1; i <= nearbyI + 1; i++) {
+                    for (let j = nearbyJ - 1; j <= nearbyJ + 1; j++) {
+                        if (i >= 0 && j >= 0 && i < cols && j < rows) {
+                            let cell = maze[i + j * cols];
+                            let cx = i * currentCellSize, cy = j * currentCellSize;
+                            pctx.strokeStyle = config.cyan; pctx.lineWidth = 2;
+                            pctx.globalAlpha = 0.4 * (1 - Math.min(1, Math.hypot(player.x - (cx + currentCellSize / 2), player.y - (cy + currentCellSize / 2)) / 150));
+                            pctx.beginPath();
+                            if (cell.walls[0]) { pctx.moveTo(cx, cy); pctx.lineTo(cx + currentCellSize, cy); }
+                            if (cell.walls[1]) { pctx.moveTo(cx + currentCellSize, cy); pctx.lineTo(cx + currentCellSize, cy + currentCellSize); }
+                            if (cell.walls[2]) { pctx.moveTo(cx + currentCellSize, cy + currentCellSize); pctx.lineTo(cx, cy + currentCellSize); }
+                            if (cell.walls[3]) { pctx.moveTo(cx, cy); pctx.lineTo(cx, cy + currentCellSize); }
+                            pctx.stroke();
+                        }
+                    }
+                }
+                pctx.globalAlpha = 1;
+
+                // OPCIÓN 2: PARALLAX PARA MENSAJES
+                let px = (player.x / width - 0.5) * 40;
+                let py = (player.y / height - 0.5) * 40;
+                if (cMsg.classList.contains('show-msg-central')) {
+                    cMsg.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px)) scale(1.05)`;
+                }
+
+                tctx.globalAlpha = 0.4; tctx.strokeStyle = config.cyan;
+                tctx.lineWidth = player.radius * 2.2; tctx.lineCap = 'round';
+                tctx.beginPath(); tctx.moveTo(player.x - player.vx, player.y - player.vy);
+                tctx.lineTo(player.x, player.y); tctx.stroke();
+
+                pctx.clearRect(-width, -height, width * 2, height * 2);
+
+                // OPCIÓN 1: GUÍA DE RESPIRACIÓN
+                breathTime += 0.02;
+                let breathScale = 1 + Math.sin(breathTime) * 0.4;
+                pctx.strokeStyle = config.cyan;
+                pctx.lineWidth = 1; pctx.globalAlpha = 0.2 * (1 - Math.abs(Math.sin(breathTime)));
+                pctx.beginPath(); pctx.arc(player.x, player.y, player.radius * (3 + breathScale * 2), 0, Math.PI * 2); pctx.stroke();
+
+                // Luz de proximidad focalizada
+                let revGrad = pctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, 350);
+                revGrad.addColorStop(0, 'rgba(0, 242, 255, 0.15)');
+                revGrad.addColorStop(1, 'transparent');
+                pctx.fillStyle = revGrad; pctx.fillRect(-width, -height, width * 2, height * 2);
+
+                discoveryNodes.forEach(n => {
+                    if (!n.activated) {
+                        pctx.shadowBlur = 15; pctx.shadowColor = config.lavender; pctx.fillStyle = config.lavender;
+                        pctx.beginPath(); pctx.arc(n.x, n.y, 5, 0, Math.PI * 2); pctx.fill();
+                        if (Math.hypot(player.x - n.x, player.y - n.y) < 30) {
+                            n.activated = true; showCentralMessage();
+                            if (navigator.vibrate) navigator.vibrate(60);
+                        }
+                    }
+                });
+
+                let pulse = Math.sin(Date.now() * 0.003) * 8 + 30;
+                pctx.shadowBlur = pulse; pctx.shadowColor = config.gold;
+                pctx.fillStyle = config.gold; pctx.beginPath();
+                pctx.arc(endCell.i * currentCellSize + currentCellSize / 2, endCell.j * currentCellSize + currentCellSize / 2, 12, 0, Math.PI * 2);
+                pctx.fill();
+
+                pctx.shadowBlur = 30; pctx.shadowColor = config.cyan;
+                pctx.fillStyle = config.cyan;
+                drops.forEach((d, it) => {
+                    pctx.beginPath(); pctx.arc(d.x, d.y, d.r * d.life, 0, Math.PI * 2); pctx.fill();
+                    d.x += d.vx; d.y += d.vy; d.life -= 0.03;
+                    if (d.life <= 0) drops.splice(it, 1);
+                });
+
+                // OPCIÓN 2: DIBUJAR PARTÍCULAS
+                contemplationParticles.forEach((p, it) => {
+                    pctx.fillStyle = `rgba(255,255,255,${p.opacity})`;
+                    pctx.beginPath(); pctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); pctx.fill();
+                    let dx = width / 2 - p.x, dy = height / 2 - p.y;
+                    let dist = Math.hypot(dx, dy);
+                    p.x += (dx / dist) * p.speed; p.y += (dy / dist) * p.speed;
+                    if (stationaryTime > 300) p.opacity = Math.min(0.4, p.opacity + 0.01);
+                    else p.opacity *= 0.95;
+                    if (dist < 10 || p.opacity < 0.01) contemplationParticles.splice(it, 1);
+                });
+
+                // OPCIÓN 3: DIBUJAR LUCIÉRNAGA
+                if (firefly.active) {
+                    firefly.x += (firefly.targetX - firefly.x) * 0.05;
+                    firefly.y += (firefly.targetY - firefly.y) * 0.05;
+                    pctx.shadowBlur = 20; pctx.shadowColor = config.gold;
+                    pctx.fillStyle = config.gold; pctx.beginPath();
+                    pctx.arc(firefly.x, firefly.y, 4, 0, Math.PI * 2); pctx.fill();
+                    pctx.shadowBlur = 0;
+                }
+
+                let grad = pctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, player.radius);
+                grad.addColorStop(0, '#fff'); grad.addColorStop(0.5, config.cyan); grad.addColorStop(1, 'transparent');
+                pctx.fillStyle = grad; pctx.beginPath(); pctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2); pctx.fill();
+
+                if (Math.hypot(player.x - (endCell.i * currentCellSize + currentCellSize / 2), player.y - (endCell.j * currentCellSize + currentCellSize / 2)) < 35) { win(); }
+            }
+
+            if (particles.length > 0) {
+                pctx.shadowBlur = 10;
+                particles.forEach((p, it) => {
+                    pctx.fillStyle = p.c; pctx.beginPath(); pctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); pctx.fill();
+                    p.x += p.vx; p.y += p.vy; p.r *= 0.98;
+                    if (p.r < 0.2) particles.splice(it, 1);
+                });
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function win() {
+            isGameActive = false;
+            completedMazes++;
+            updateTree(); // OPCIÓN 1: ACTUALIZAR ÁRBOL
+
+            updateSeasonalColor(); // OPCIÓN 4
+
+            document.getElementById('win-phrase').innerText = patiencePhrases[Math.floor(Math.random() * patiencePhrases.length)];
+            achievement.classList.add('show-msg-central');
+
+            // OPCIÓN 3: DIARIO DE GRATITUD
+            setTimeout(() => {
+                const prompt = document.getElementById('gratitude-prompt');
+                const video = document.getElementById('gratitude-video');
+                prompt.style.opacity = 1;
+                prompt.style.pointerEvents = 'auto';
+                if (video) {
+                    // Si el video aún no está en caché, le asignamos la URL directa como respaldo
+                    if (!video.src) video.src = VIDEO_URL;
+                    video.style.opacity = 1; // Opaco total para ocultar fondo
+                    video.play().catch(e => console.log("Video play blocked"));
+                }
+            }, 3000);
+
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: endCell.i * currentCellSize + currentCellSize / 2,
+                    y: endCell.j * currentCellSize + currentCellSize / 2,
+                    vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.5) * 12,
+                    r: Math.random() * 6 + 2, c: Math.random() > 0.5 ? config.gold : config.cyan
+                });
+            }
+        }
+
+        function closeGratitude() {
+            // Efecto de elevación al cielo (partículas hacia arriba)
+            for (let i = 0; i < 60; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: height,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: -Math.random() * 8 - 4,
+                    r: Math.random() * 3 + 1,
+                    c: config.gold
+                });
+            }
+
+            document.getElementById('gratitude-prompt').style.opacity = 0;
+            document.getElementById('gratitude-prompt').style.pointerEvents = 'none';
+            updateTree(false); // Ocultar el árbol al cerrar
+            const video = document.getElementById('gratitude-video');
+            if (video) {
+                setTimeout(() => { video.pause(); video.style.opacity = 0; }, 1500);
+            }
+
+            setTimeout(() => {
+                achievement.classList.remove('show-msg-central');
+                [mctx.canvas, tctx.canvas, pctx.canvas].forEach(c => c.classList.add('dissolving'));
+                setTimeout(() => {
+                    [mctx.canvas, tctx.canvas, pctx.canvas].forEach(c => c.classList.remove('dissolving'));
+                    resize();
+                }, 1800);
+            }, 1000);
+        }
+    </script>
+</body>
+
+</html>
