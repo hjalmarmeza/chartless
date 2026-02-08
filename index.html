@@ -394,7 +394,7 @@
         </audio>
 
         <div id="gratitude-prompt">
-            <video id="gratitude-video" loop muted playsinline preload="none">
+            <video id="gratitude-video" loop muted playsinline preload="auto">
                 <!-- El src se asignará dinámicamente desde el caché -->
             </video>
             <div class="gratitude-text">Ahora cierra tus ojos unos segundos y piensa<br><span
@@ -473,7 +473,7 @@
             "Bajo Sus alas estás seguro", "El Señor es tu refugio", "Su bondad es para siempre", "Su palabra es lámpara",
             "Él calma la tormenta", "Camina por fe, no por vista", "Su gozo es tu fortaleza",
             "El objetivo es el recorrido", "Siente la quietud", "Todo fluye a su tiempo", "Sin prisa",
-            "Libera la tensión", "Disfruta el silencio", "Paciencia infinita", "Mente en paz",
+            "Libera la tensión", "Disfruta el silencio", "Mente en paz",
             "La paz es el camino", "Confía en el proceso", "Serenidad absoluta", "Paz permanente"
         ];
 
@@ -522,23 +522,34 @@
 
         async function prefetchVideo() {
             try {
-                // Intentar recuperar de Cache API (máxima eficiencia)
                 const cache = await caches.open('cloudinary-video-cache');
                 let response = await cache.match(VIDEO_URL);
 
                 if (!response) {
-                    console.log("Descargando video por única vez...");
+                    console.log("Descargando video para caché...");
                     response = await fetch(VIDEO_URL);
+                    if (!response.ok) throw new Error("Fetch failed");
                     await cache.put(VIDEO_URL, response.clone());
-                } else {
-                    console.log("Video cargado desde caché local.");
                 }
 
                 const blob = await response.blob();
                 localVideoURL = URL.createObjectURL(blob);
                 const videoEl = document.getElementById('gratitude-video');
-                if (videoEl) videoEl.src = localVideoURL;
-            } catch (e) { console.error("Error en caché de video:", e); }
+
+                if (videoEl) {
+                    const isVisible = document.getElementById('gratitude-prompt').style.opacity == "1";
+                    const wasPlaying = !videoEl.paused;
+                    videoEl.src = localVideoURL;
+                    if (wasPlaying || isVisible) {
+                        videoEl.play().catch(e => console.log("Auto-resume blocked"));
+                    }
+                }
+                console.log("Video listo en caché local.");
+            } catch (e) {
+                console.error("Error en caché de video:", e);
+                const videoEl = document.getElementById('gratitude-video');
+                if (videoEl && !videoEl.src) videoEl.src = VIDEO_URL;
+            }
         }
         // Iniciar pre-descarga silenciosa tras 5 segundos de juego para no afectar el inicio
         setTimeout(prefetchVideo, 5000);
