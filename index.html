@@ -214,12 +214,15 @@
 
         .achievement-title {
             color: var(--gold);
-            font-size: 2.5rem;
-            letter-spacing: 1.5rem;
+            font-size: 1.8rem;
+            /* Reducido para evitar desbordamiento */
+            letter-spacing: 0.4rem;
+            /* Reducido drásticamente */
             font-weight: 200;
             text-transform: uppercase;
             margin-bottom: 25px;
             text-align: center;
+            width: 90%;
         }
 
         /* JARDÍN DE SERENIDAD */
@@ -385,7 +388,7 @@
     <div id="app-container">
         <canvas id="tree-canvas"></canvas>
         <audio id="bg-music" loop>
-            <source src="audio/lost_in_the_ocean.mp3" type="audio/mpeg">
+            <source src="lost_in_the_ocean.mp3" type="audio/mpeg">
         </audio>
 
         <div id="gratitude-prompt">
@@ -446,7 +449,7 @@
         }
 
         const config = {
-            baseCellSize: 75,
+            baseCellSize: 50, // Laberintos más profundos y complejos
             fluidFriction: 0.96,
             fluidElasticity: 0.01,
             cyan: '#00f2ff',
