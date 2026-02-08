@@ -597,9 +597,15 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
             const music = document.getElementById('bg-music');
+            const video = document.getElementById('gratitude-video');
+
             if (music && music.paused) {
                 music.volume = 0;
-                music.play().catch(e => console.error("Priming error:", e));
+                music.play().catch(e => console.error("Priming music error:", e));
+            }
+            // CEBADO DE VIDEO PARA MÓVILES: Reproducir y pausar para obtener permiso
+            if (video && video.paused) {
+                video.play().then(() => video.pause()).catch(e => console.log("Video priming error:", e));
             }
 
             clearInterval(pressTimer);
@@ -951,7 +957,10 @@
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             const ox = (width - cols * currentCellSize) / 2;
             const oy = (height - rows * currentCellSize) / 2;
-            player.targetX = clientX - ox; player.targetY = clientY - oy;
+
+            // CLAMPEO: Evita que el target salga del laberinto (evita estancamiento)
+            player.targetX = Math.max(10, Math.min(cols * currentCellSize - 10, clientX - ox));
+            player.targetY = Math.max(10, Math.min(rows * currentCellSize - 10, clientY - oy));
         };
 
         window.addEventListener('mousedown', (e) => { isMouseDown = true; updateTarget(e); });
@@ -1027,7 +1036,15 @@
 
                 if (!checkWall(player.x + player.vx, player.y + player.vy)) {
                     player.x += player.vx; player.y += player.vy;
-                } else { player.vx *= -0.1; player.vy *= -0.1; }
+                } else {
+                    // LÓGICA ANTI-ESTANCAMIENTO: Rebote + Empujón suave
+                    player.vx *= -0.2; player.vy *= -0.2;
+                    // Nudge: empuja al jugador hacia el centro de su celda actual para despegarlo
+                    let cellCenterX = Math.floor(player.x / currentCellSize) * currentCellSize + currentCellSize / 2;
+                    let cellCenterY = Math.floor(player.y / currentCellSize) * currentCellSize + currentCellSize / 2;
+                    player.x += (cellCenterX - player.x) * 0.1;
+                    player.y += (cellCenterY - player.y) * 0.1;
+                }
 
                 if (speed > 2 && Math.random() < 0.2) drops.push({ x: player.x, y: player.y, vx: -player.vx * 0.4, vy: -player.vy * 0.4, r: 5, life: 1 });
 
