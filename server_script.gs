@@ -1,6 +1,6 @@
 // CHART LESS: SISTEMA DE ACCESO PRIVADO
-// ID de la Hoja de Google Sheets
-const SHEET_ID = "1TThCjxBPbLsj4WtuNUaf1k4QmWqN81G3IQJ8BOd6NiQ"; 
+// ID de la Hoja de Google Sheets CORRECTA
+const SHEET_ID = "16ieJnTt7pwJsJ61fHbj6CIUbfJlZg7zjtTMzTv9AaEo"; 
 
 function doGet(e) { return handleRequest(e); }
 function doPost(e) { return handleRequest(e); }
@@ -26,8 +26,12 @@ function handleRequest(e) {
     
     // Buscamos la llave en la columna A
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]).trim().toUpperCase() === String(accessKey).trim().toUpperCase()) {
-        if (String(data[i][1]).trim().toLowerCase() === "activo") {
+      const rowKey = String(data[i][0]).trim();
+      const rowStatus = String(data[i][1]).trim().toLowerCase();
+      
+      // Solo validamos si la fila tiene datos reales
+      if (rowKey !== "" && accessKey && accessKey !== "") {
+        if (rowKey.toUpperCase() === accessKey.toUpperCase() && rowStatus === "activo") {
           isValid = true;
           break;
         }

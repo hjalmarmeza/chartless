@@ -36,6 +36,8 @@
             background-color: #000;
             font-family: var(--font-main);
             color: white;
+            overscroll-behavior: none;
+            /* Evita que la pantalla se "jale" o rebote */
         }
 
         #app-container {
@@ -161,8 +163,8 @@
 
         #maze-canvas {
             z-index: 5;
-            opacity: 0.2;
-            /* 20% solicitado, ahora visible con color corregido */
+            opacity: 0.5;
+            /* Subido al 50% como solicitaste */
         }
 
         #trail-canvas {
@@ -452,11 +454,27 @@
             align-items: center;
             transition: opacity 1.5s ease-in-out;
             text-align: center;
+            backdrop-filter: blur(30px);
+            /* Desenfoque total del juego atrás */
+            -webkit-backdrop-filter: blur(30px);
         }
 
         .login-box {
             width: 80%;
             max-width: 320px;
+            animation: fadeInLogin 0.8s ease-out;
+        }
+
+        @keyframes fadeInLogin {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .login-title {
@@ -582,9 +600,9 @@
                     </div>
                     <div class="instruction-text">MANTÉN PARA EMPEZAR</div>
                 </div>
-                <!-- Botón fuera de interaction-zone para evitar preventDefault -->
+                <!-- Botón recolocado arriba de los créditos -->
                 <div id="purpose-trigger" onclick="togglePurpose(true)"
-                    style="margin-top: 30px; color: var(--cyan); opacity: 0.7; font-size: 0.75rem; letter-spacing: 0.2rem; text-decoration: underline; cursor: pointer; position: relative; z-index: 210; padding: 10px;">
+                    style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); color: var(--cyan); opacity: 0.7; font-size: 0.75rem; letter-spacing: 0.2rem; text-decoration: underline; cursor: pointer; z-index: 210; padding: 10px; width: 100%; text-align: center;">
                     ¿CÓMO ME AYUDA?
                 </div>
             </div>
@@ -639,7 +657,11 @@
                 if (data.status === 'success') {
                     localStorage.setItem('chartless_key', key);
                     overlay.style.opacity = '0';
-                    setTimeout(() => overlay.style.display = 'none', 1500);
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        // Pequeña vibración de éxito
+                        if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+                    }, 1500);
                 } else {
                     if (auto) {
                         localStorage.removeItem('chartless_key');
