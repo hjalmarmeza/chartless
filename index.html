@@ -394,7 +394,8 @@
         </audio>
 
         <div id="gratitude-prompt">
-            <video id="gratitude-video" loop muted playsinline preload="auto">
+            <video id="gratitude-video" loop muted playsinline preload="auto"
+                poster="https://res.cloudinary.com/dveqs8f3n/video/upload/f_auto,q_auto,w_1080,c_limit/v1770516312/VaporDiagonalGrey_builfa.jpg">
                 <!-- El src se asignará dinámicamente desde el caché -->
             </video>
             <div class="gratitude-text">Ahora cierra tus ojos unos segundos y piensa<br><span
@@ -516,8 +517,11 @@
         const achievement = document.getElementById('achievement-overlay');
         const garden = document.getElementById('garden-container');
 
-        // CACHÉ DE VIDEO DE CLOUDINARY (Protección de Cuotas)
-        const VIDEO_URL = "https://res.cloudinary.com/dveqs8f3n/video/upload/f_auto,q_auto/v1770516312/VaporDiagonalGrey_builfa.mp4";
+        // CACHÉ DE VIDEO DE CLOUDINARY (Protección Extrema de Cuotas)
+        // f_auto,q_auto: Formato y calidad automática
+        // w_1080,c_limit: Limita el ancho para ahorrar banda en móviles
+        // vc_auto: Selecciona el códec más eficiente según el navegador (VP9, AV1, etc)
+        const VIDEO_URL = "https://res.cloudinary.com/dveqs8f3n/video/upload/f_auto,q_auto,w_1080,c_limit,vc_auto/v1770516312/VaporDiagonalGrey_builfa.mp4";
         let localVideoURL = null;
 
         async function prefetchVideo() {
