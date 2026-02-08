@@ -382,6 +382,60 @@
             letter-spacing: 0.1rem;
             text-transform: uppercase;
         }
+
+        /* MODAL DE PROPÓSITO */
+        #purpose-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 600;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+            backdrop-filter: blur(15px);
+        }
+
+        .purpose-header {
+            color: var(--cyan);
+            font-size: 1.4rem;
+            letter-spacing: 0.5rem;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            font-weight: 200;
+        }
+
+        .purpose-body {
+            color: #ccc;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            letter-spacing: 0.1rem;
+            max-width: 450px;
+            margin-bottom: 40px;
+            font-weight: 200;
+        }
+
+        .purpose-body b {
+            color: var(--gold);
+            font-weight: 400;
+        }
+
+        .purpose-close {
+            background: transparent;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 12px 35px;
+            text-transform: uppercase;
+            letter-spacing: 0.2rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 
@@ -402,6 +456,20 @@
                     style="font-size: 1.2rem; opacity: 0.8;">¿Por qué estás agradecido hoy con Dios?</span></div>
             <button class="gratitude-btn" onclick="closeGratitude()">Agradecimiento elevado al cielo</button>
         </div>
+        <div id="purpose-modal">
+            <div class="purpose-header">GUÍA DE PAZ</div>
+            <div class="purpose-body">
+                Este espacio no es para ganar, es para <b>estar</b>.<br><br>
+                1. <b>Respira:</b> Sincroniza tu aliento con los pulsos de luz del fondo.<br>
+                2. <b>Sin Prisa:</b> Mueve el círculo suavemente. Si vas rápido, el agua vibrará recordándote volver a
+                la calma.<br>
+                3. <b>Suelta el Control:</b> No hay tiempo ni puntajes. El objetivo es el recorrido, no el
+                final.<br><br>
+                Deja que el laberinto te ayude a soltar la ansiedad.
+            </div>
+            <button class="purpose-close" onclick="togglePurpose(false)">ENTENDIDO</button>
+        </div>
+
         <div id="splash-screen">
             <div id="music-credits">
                 Music: lost in the ocean by Limujii<br>
@@ -423,6 +491,10 @@
                     </div>
                 </div>
                 <div class="instruction-text">MANTÉN PARA EMPEZAR</div>
+                <div id="purpose-trigger" onclick="togglePurpose(true)"
+                    style="margin-top: 30px; color: var(--cyan); opacity: 0.6; font-size: 0.7rem; letter-spacing: 0.2rem; text-decoration: underline; cursor: pointer;">
+                    ¿CÓMO ME AYUDA?
+                </div>
             </div>
         </div>
 
@@ -642,6 +714,11 @@
         interactionZone.addEventListener('touchstart', handleStart, { passive: false });
         window.addEventListener('mouseup', handleEnd);
         window.addEventListener('touchend', handleEnd);
+
+        function togglePurpose(show) {
+            const modal = document.getElementById('purpose-modal');
+            modal.style.display = show ? 'flex' : 'none';
+        }
 
         function startGame() {
             try {
