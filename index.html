@@ -403,31 +403,37 @@
             z-index: 600;
             display: none;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
+            /* Cambiado a flex-start para permitir scroll */
             align-items: center;
-            padding: 40px;
+            padding: 60px 30px;
+            /* Más padding para comodidad */
             text-align: center;
             backdrop-filter: blur(15px);
+            overflow-y: auto;
+            /* Habilitar scroll vertical */
+            -webkit-overflow-scrolling: touch;
         }
 
         .purpose-header {
             color: var(--cyan);
-            font-size: 2rem;
-            /* Aumentado para accesibilidad */
+            font-size: 2.5rem;
+            /* Aumentado sustancialmente */
             letter-spacing: 0.5rem;
             margin-bottom: 30px;
             text-transform: uppercase;
             font-weight: 200;
+            padding-top: 20px;
         }
 
         .purpose-body {
             color: #ccc;
-            font-size: 1.4rem;
-            /* Aumentado considerablemente */
-            line-height: 1.6;
+            font-size: 1.8rem;
+            /* Fuente muy grande para máxima legibilidad */
+            line-height: 1.5;
             letter-spacing: 0.1rem;
             max-width: 600px;
-            margin-bottom: 40px;
+            margin-bottom: 50px;
             font-weight: 200;
         }
 
@@ -440,13 +446,15 @@
             background: transparent;
             border: 1px solid var(--cyan);
             color: var(--cyan);
-            padding: 15px 45px;
+            padding: 20px 60px;
             text-transform: uppercase;
             letter-spacing: 0.2rem;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 1.2rem;
-            /* Botón más legible */
+            font-size: 1.5rem;
+            /* Botón gigante para fácil clic */
+            margin-bottom: 40px;
+            /* Margen inferior para el final del scroll */
         }
 
         /* LOGIN OVERLAY SYSTEM */
